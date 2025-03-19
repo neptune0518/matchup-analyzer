@@ -1,9 +1,15 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+from openai import OpenAI
 import requests
 from io import StringIO
 
-# Define GitHub raw URLs
+# Initialize OpenAI API (Replace 'your-api-key' with your actual OpenAI API Key)
+client = OpenAI(api_key="your-api-key")
+
+# Define GitHub raw URLs for datasets
 file_paths = {
     "Defense": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/defense25.csv",
     "Height": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/height25.csv",
@@ -17,49 +23,74 @@ def load_data(url):
     """Fetch CSV file from GitHub and load into a DataFrame."""
     try:
         response = requests.get(url)
-        response.raise_for_status()  # Raise an error if the request fails
-        csv_data = StringIO(response.text)  # Convert the text response to a file-like object
+        response.raise_for_status()
+        csv_data = StringIO(response.text)
         return pd.read_csv(csv_data)
     except requests.exceptions.RequestException as e:
         st.error(f"Error loading {url}: {e}")
         return None
 
-# Load all datasets
 dataframes = {name: load_data(url) for name, url in file_paths.items()}
-
-# Remove None values if any files failed
 dataframes = {k: v for k, v in dataframes.items() if v is not None}
 
-# Streamlit UI
 st.title("College Basketball Matchup Analyzer")
 
-# Check if data loaded correctly
-if dataframes:
-    st.success("All data files loaded successfully!")
-else:
-    st.error("Error loading data. Check file URLs or repository settings.")
-
-# Team selection
 if "Summary" in dataframes:
     team1 = st.selectbox("Select Team 1", dataframes["Summary"]["TeamName"].unique())
     team2 = st.selectbox("Select Team 2", dataframes["Summary"]["TeamName"].unique())
 
-    if st.button("Compare Teams"):
-        def get_team_stats(team_name):
-            stats = {}
-            for name, df in dataframes.items():
-                team_data = df[df['TeamName'] == team_name]
-                if not team_data.empty:
-                    stats[name] = team_data.iloc[0].to_dict()
-            return stats
+    st.subheader(f"📊 {team1} vs {team2} – Strength Comparison")
+    categories = ["AdjOE", "AdjDE", "AdjTempo", "RankAdjEM"]
+    team1_stats = [dataframes["Summary"].loc[dataframes["Summary"]["TeamName"] == team1, cat].values[0] for cat in categories]
+    team2_stats = [dataframes["Summary"].loc[dataframes["Summary"]["TeamName"] == team2, cat].values[0] for cat in categories]
 
-        stats1 = get_team_stats(team1)
-        stats2 = get_team_stats(team2)
+    angles = np.linspace(0, 2 * np.pi, len(categories), endpoint=False).tolist()
+    team1_stats += team1_stats[:1]
+    team2_stats += team2_stats[:1]
+    angles += angles[:1]
 
-        st.subheader(f"Comparison: {team1} vs {team2}")
-        for category in stats1.keys():
-            st.write(f"**{category} Metrics**")
-            df_compare = pd.DataFrame([stats1[category], stats2[category]], index=[team1, team2])
-            st.dataframe(df_compare)
+    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
+    ax.fill(angles, team1_stats, color="blue", alpha=0.3, label=team1)
+    ax.fill(angles, team2_stats, color="red", alpha=0.3, label=team2)
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(categories)
+    ax.set_title("📊 Team Strength Comparison")
+    ax.legend()
+    st.pyplot(fig)
 
-st.write("*Built for querying matchups and key metrics*")
+    st.subheader("💰 Betting Model – Best Value Picks")
+    betting_teams = dataframes["Summary"][(dataframes["Summary"]["RankAdjDE"] < 50) & (dataframes["Summary"]["RankAdjEM"] > 100)]
+    if not betting_teams.empty:
+        st.dataframe(betting_teams[["TeamName", "AdjDE", "AdjEM"]])
+    else:
+        st.write("No clear value teams found.")
+
+    st.subheader("🚨 Potential Upset Alerts")
+    upset_alerts = dataframes["Summary"][(dataframes["Summary"]["RankAdjDE"] < 40) & (dataframes["Summary"]["RankAdjEM"] > 100) & (dataframes["Summary"]["AdjTempo"] > 70)]
+    if not upset_alerts.empty:
+        st.dataframe(upset_alerts[["TeamName", "AdjDE", "AdjTempo"]])
+    else:
+        st.write("No high-upset probability teams found.")
+
+    st.subheader("🤖 AI Betting Insights")
+    prompt = f"""
+    Analyze the betting value for {team1} vs. {team2}. 
+    - Consider efficiency, defensive metrics, and historical trends.
+    - Predict which team is more likely to cover the spread.
+    - Provide betting strategies.
+
+    Data:
+    - {team1}: {team1_stats[0]} Off Eff, {team1_stats[1]} Def Eff
+    - {team2}: {team2_stats[0]} Off Eff, {team2_stats[1]} Def Eff
+    """
+    try:
+        response = client.Completion.create(
+            engine="gpt-4",
+            prompt=prompt,
+            max_tokens=300
+        )
+        st.write(response["choices"][0]["text"].strip())
+    except Exception as e:
+        st.error("AI could not generate an answer. Try again later.")
+
+st.write("*Built for querying matchups, betting insights, and AI-driven analysis*")
