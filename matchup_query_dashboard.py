@@ -1,20 +1,22 @@
 import streamlit as st
 import pandas as pd
 
-# Load datasets
+# Define GitHub raw URLs for each dataset
 file_paths = {
-    "Defense": "/mnt/data/defense25.csv",
-    "Height": "/mnt/data/height25.csv",
-    "Misc": "/mnt/data/misc25.csv",
-    "Offense": "/mnt/data/offense25.csv",
-    "Point Distribution": "/mnt/data/pointdist25.csv",
-    "Summary": "/mnt/data/summary25 (1).csv"
+    "Defense": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/defense25.csv",
+    "Height": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/height25.csv",
+    "Misc": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/misc25.csv",
+    "Misc2": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/misc25 (1).csv",
+    "Offense": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/offense25.csv",
+    "Point Distribution": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/pointdist25.csv",
+    "Summary": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/summary25 (1).csv"
 }
 
-dataframes = {name: pd.read_csv(path) for name, path in file_paths.items()}
+# Load CSVs into dataframes
+dataframes = {name: pd.read_csv(url) for name, url in file_paths.items()}
 
+# Function to get team stats
 def get_team_stats(team_name):
-    """Retrieve team statistics across multiple data sources."""
     stats = {}
     for name, df in dataframes.items():
         team_data = df[df['TeamName'] == team_name]
@@ -32,7 +34,7 @@ team2 = st.selectbox("Select Team 2", dataframes["Summary"]["TeamName"].unique()
 if st.button("Compare Teams"):
     stats1 = get_team_stats(team1)
     stats2 = get_team_stats(team2)
-    
+
     st.subheader(f"Comparison: {team1} vs {team2}")
     for category in stats1.keys():
         st.write(f"**{category} Metrics**")
