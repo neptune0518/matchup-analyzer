@@ -5,13 +5,13 @@ from io import StringIO
 
 # Define GitHub raw URLs
 file_paths = {
+    "Summary": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/summary25.csv",
+    "Offense": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/offense25.csv",
     "Defense": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/defense25.csv",
     "Height": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/height25.csv",
     "Misc Offense": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/misc25Offense.csv",
     "Misc Defense": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/misc25Defense.csv",
-    "Offense": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/offense25.csv",
     "Point Distribution": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/pointdist25.csv",
-    "Summary": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/summary25.csv"
 }
 
 def load_data(url):
