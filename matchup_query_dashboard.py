@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import requests
+from io import StringIO
 
 # Define GitHub raw URLs
 file_paths = {
@@ -9,16 +10,18 @@ file_paths = {
     "Misc": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/misc25.csv",
     "Offense": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/offense25.csv",
     "Point Distribution": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/pointdist25.csv",
-    "Summary": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/summary25 (1).csv"
+    "Summary": "https://raw.githubusercontent.com/neptune0518/matchup-analyzer/main/summary25.csv"
 }
 
 def load_data(url):
     """Fetch CSV file from GitHub and load into a DataFrame."""
-    response = requests.get(url)
-    if response.status_code == 200:
-        return pd.read_csv(url)
-    else:
-        st.error(f"Failed to load {url} - Status Code {response.status_code}")
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an error if the request fails
+        csv_data = StringIO(response.text)  # Convert the text response to a file-like object
+        return pd.read_csv(csv_data)
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error loading {url}: {e}")
         return None
 
 # Load all datasets
