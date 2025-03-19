@@ -63,30 +63,3 @@ if "Summary" in dataframes:
             st.dataframe(df_compare)
 
 st.write("*Built for querying matchups and key metrics*")
-
-import matplotlib.pyplot as plt
-import numpy as np
-
-st.subheader(f"📊 {team1} vs {team2} – Strength Comparison")
-
-# Define key categories for comparison
-categories = ["AdjOE", "AdjDE", "AdjTempo", "RankAdjEM"]
-team1_stats = [dataframes["Summary"].loc[dataframes["Summary"]["TeamName"] == team1, cat].values[0] for cat in categories]
-team2_stats = [dataframes["Summary"].loc[dataframes["Summary"]["TeamName"] == team2, cat].values[0] for cat in categories]
-
-# Prepare Radar Chart
-angles = np.linspace(0, 2 * np.pi, len(categories), endpoint=False).tolist()
-team1_stats += team1_stats[:1]
-team2_stats += team2_stats[:1]
-angles += angles[:1]
-
-fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
-ax.fill(angles, team1_stats, color="blue", alpha=0.3, label=team1)
-ax.fill(angles, team2_stats, color="red", alpha=0.3, label=team2)
-
-ax.set_xticks(angles[:-1])
-ax.set_xticklabels(categories)
-ax.set_title("📊 Team Strength Comparison")
-ax.legend()
-
-st.pyplot(fig)
